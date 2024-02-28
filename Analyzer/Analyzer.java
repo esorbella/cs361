@@ -1,8 +1,19 @@
 package cs361.Analyzer;
 import java.util.*;
+import java.util.regex.*;
 import java.io.*;
 
 public class Analyzer {
+    //maintain single list of tokens for a given program.
+    public static ArrayList<Token> tokenList = new ArrayList<>();
+
+    //regular expressions for each type of token.
+    public static final String keywords = "\\b(if|else|int|double|float|struct|char|long|for|while|return|switch|case)\\b";
+    public static final String identifiers = "[a-zA-Z_][a-zA-Z0-9_]*";
+    public static final String operators = "\\+|-|\\*|/|%|=|==|!=|<|>|<=|>=|&&|\\|\\|";
+    public static final String punctuation = "[{}()\\[\\],;.]";
+    public static final String constants = "\\b(\\d+\\.\\d+|\\d+\\.\\d*[eE][+-]?\\d+|\\d+[eE][+-]?\\d+|\\d+|'[^']*'|\"[^\"]*\")\\b";
+
     //create Token class for each token found in
     //given program. Can return its type and value
     //as well as a toString() method.
@@ -28,27 +39,38 @@ public class Analyzer {
 
         @Override
         public String toString() {
-            return "Token: | Type: " + this.type + " | Value: " + this.value;
+            return "TYPE: " + this.type + " VALUE: " + this.value + "\n";
         }
     }
-    //TODO:
-    //Tokenize the given program by assigning each keyword/
-    //punctuation mark with a type and value
-    //Example: { = punctuation
-    //Example: int = keyword
-    //Example + = operator... etc.
-    public static ArrayList<String> Tokenizer(String input)
-    {
-        ArrayList<String> myList = new ArrayList<>();
+    //tokenize the program line-by-line.
+    //each token is identified by comparing against each regular expression.
+    public static ArrayList<Token> Tokenizer(String input)
+    {   
+        String combinedPattern = String.join("|", keywords, identifiers, operators, 
+        punctuation, constants);
+        Pattern pattern = Pattern.compile(combinedPattern);
+        Matcher matcher = pattern.matcher(input);
 
-        String[] data = input.split("\\s+");
-
-        for (String value: data)
-        {
-            System.out.println(value);
+        while(matcher.find())
+        {   
+            String tokenType = "";
+            String tokenValue = matcher.group();
+            if (tokenValue.matches(keywords)) {
+                tokenType = "Keyword";
+            } else if (tokenValue.matches(identifiers)) {
+                tokenType = "Identifier";
+            } else if (tokenValue.matches(operators)) {
+                tokenType = "Operator";
+            } else if (tokenValue.matches(punctuation)) {
+                tokenType = "Punctuation";
+            } else if (tokenValue.matches(constants)){
+                tokenType = "Constant";
+            }
+            //add each token to overall token list
+            tokenList.add(new Token(tokenType, tokenValue));
         }
 
-        return myList;
+        return tokenList;
     }
 
     //Main function. Reads file "example.c" and parses each line
@@ -58,14 +80,19 @@ public class Analyzer {
         BufferedReader reader;
         try {
             String line;
-            reader = new BufferedReader(new FileReader("example.c"));
+            reader = new BufferedReader(new FileReader("example2.c"));
             while ((line = reader.readLine()) != null)
             {
                 Tokenizer(line);
             }
+            reader.close();
         }
         catch (IOException e) {
             System.out.println("File not found.");
+        }
+        for (Token token: tokenList)
+        {
+            System.out.print(token);
         }
     }
 }
