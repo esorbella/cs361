@@ -13,10 +13,11 @@ public class Analyzer {
     public static final String operators = "\\+|-|\\*|/|%|=|==|!=|<|>|<=|>=|&&|\\|\\|";
     public static final String punctuation = "[{}()\\[\\],;.]";
     public static final String constants = "\\b(\\d+\\.\\d+|\\d+\\.\\d*[eE][+-]?\\d+|\\d+[eE][+-]?\\d+|\\d+|'[^']*'|\"[^\"]*\")\\b";
+    public static final String escapes = "\\\\.";
 
     //create Token class for each token found in
     //given program. Can return its type and value
-    //as well as a toString() method.
+    //and contains a toString() method.
     public static class Token{
         private String type;
         private String value;
@@ -26,28 +27,26 @@ public class Analyzer {
             this.type = type;
             this.value = value;
         }
-
         public String getType()
         {
             return this.type;
         }
-
         public String getValue()
         {
             return this.value;
         }
-
         @Override
         public String toString() {
             return "TYPE: " + this.type + " VALUE: " + this.value + "\n";
         }
     }
+
     //tokenize the program line-by-line.
     //each token is identified by comparing against each regular expression.
     public static ArrayList<Token> Tokenizer(String input)
     {   
         String combinedPattern = String.join("|", keywords, identifiers, operators, 
-        punctuation, constants);
+        punctuation, constants, escapes);
         Pattern pattern = Pattern.compile(combinedPattern);
         Matcher matcher = pattern.matcher(input);
 
@@ -63,13 +62,17 @@ public class Analyzer {
                 tokenType = "Operator";
             } else if (tokenValue.matches(punctuation)) {
                 tokenType = "Punctuation";
-            } else if (tokenValue.matches(constants)){
+            } else if (tokenValue.matches(constants)) {
                 tokenType = "Constant";
+            } else if (tokenValue.matches(escapes)) {
+                tokenType = "Escape Character";
+            } else {
+                System.out.println("Invalid token type for: " + tokenValue);
             }
+
             //add each token to overall token list
             tokenList.add(new Token(tokenType, tokenValue));
         }
-
         return tokenList;
     }
 
@@ -80,7 +83,7 @@ public class Analyzer {
         BufferedReader reader;
         try {
             String line;
-            reader = new BufferedReader(new FileReader("example2.c"));
+            reader = new BufferedReader(new FileReader("example.c"));
             while ((line = reader.readLine()) != null)
             {
                 Tokenizer(line);
