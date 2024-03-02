@@ -80,10 +80,11 @@ public class Analyzer {
     //through Tokenizer.
     public static void main(String[] args)
     {
+        String file = args[0];
         BufferedReader reader;
         try {
             String line;
-            reader = new BufferedReader(new FileReader("example.c"));
+            reader = new BufferedReader(new FileReader(file));
             while ((line = reader.readLine()) != null)
             {
                 Tokenizer(line);
