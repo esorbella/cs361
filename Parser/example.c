@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 int main() {
     int a;
     printf("Enter whole number:\n");

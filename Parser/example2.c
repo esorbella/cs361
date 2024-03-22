@@ -1,8 +1,7 @@
-#include <stdio.h>
-
 int main() {
-    //Find sum of two numbers
-    int num1, num2, sum;
+    int num1;
+    int num2;
+    int sum;
 
     printf("Enter the first integer: ");
     scanf("%d", &num1);

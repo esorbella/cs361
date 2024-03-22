@@ -16,11 +16,11 @@ public class Analyzer {
     public static final String punctuation = "[{}()\\[\\],;.]";
     public static final String constants = "\\b(\\d+\\.\\d+|\\d+\\.\\d*[eE][+-]?\\d+|\\d+[eE][+-]?\\d+|\\d+|'[^']*'|\"[^\"]*\")\\b";
     public static final String escapes = "\\\\.";
-    public static final String headerFiles = "#include\\s+<[^>]+>";
+    public static final String headers = "#include\\s+<[^>]+>";
     
     public static ArrayList<Token> Tokenizer(String input) {   
-        tokenList.clear(); // Clear the token list at the beginning
-        String combinedPattern = String.join("|", headerFiles, keywords, identifiers, operators, punctuation, constants, escapes);
+        //tokenList.clear(); // Clear the token list at the beginning
+        String combinedPattern = String.join("|", keywords, identifiers, operators, punctuation, constants, escapes, headers);
     
         Pattern pattern = Pattern.compile(combinedPattern);
         Matcher matcher = pattern.matcher(input);
@@ -40,6 +40,8 @@ public class Analyzer {
                 tokenType = "Constant";
             } else if (tokenValue.matches(escapes)) {
                 tokenType = "Escape Character";
+            } else if (tokenValue.matches(headers)) {
+                tokenType = "Header";
             } else {
                 System.out.println("Invalid token type for: " + tokenValue);
             }
