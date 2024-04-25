@@ -6,10 +6,12 @@ import java.util.*;
 public class Parser extends Analyzer {
     private List<Token> tokens;
     private int position;
+    private Set<String> symbolTable;
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.position = 0;
+        this.symbolTable = new HashSet<>();
     }
 
     // Parse the entire program
@@ -20,67 +22,69 @@ public class Parser extends Analyzer {
     }
 
     private void parseStatement() {
-        Token token = peek();
-        if (token.getType().equals("Keyword") && token.getValue().equals("int")) {
-            // Check if it's a function declaration
-            if (isFunctionDeclaration()) {
-                parseFunctionDeclaration();
-            } else {
-                parseVariableDeclaration();
-            }
-        } else if (token.getType().equals("Identifier") && (position + 1 < tokens.size()) && tokens.get(position + 1).getValue().equals("(")) {
-            // If the next token is an opening parenthesis, it's a function call
-            parseFunctionCall(token);
-        } else if (token.getType().equals("Keyword") && token.getValue().equals("if")) {
-            // If it's an "if" statement, parse the conditional expression and the block
-            consume("Keyword", "if");
-            consume("Punctuation", "(");
-            parseExpression();
-            consume("Punctuation", ")"); // Ensure to consume the closing parenthesis after the conditional expression
-            parseBlock(); // Parse the main block
-    
-            // Check for an optional "else" block
-            if (peek().getType().equals("Keyword") && peek().getValue().equals("else")) {
-                consume("Keyword", "else");
-                parseBlock(); // Parse the else block
-            }
-        } else if (token.getType().equals("Keyword") && token.getValue().equals("return")) {
-            // If it's a "return" statement, parse the expression (if present)
-            consume("Keyword", "return");
-            if (!peek().getValue().equals(";")) {
-                parseExpression();
-            }
-            Token semicolon = consume("Punctuation", ";"); // Expect a semicolon after the return statement
-            System.out.println("Parsed return statement");
-        } else {
-            // If none of the above, it could be an assignment statement
-            parseAssignmentStatement();
-        }
-    }
+    Token token = peek();
+    if (isFunctionDeclaration()) {
+        parseFunctionDeclaration();
+    } else if (token.getType().equals("Keyword") && token.getValue().equals("int")) {
+        parseVariableDeclaration();
+    } else if (token.getType().equals("Identifier") && (position + 1 < tokens.size()) && tokens.get(position + 1).getValue().equals("(")) {
+        // If the next token is an opening parenthesis, it's a function call
+        parseFunctionCall(token);
+    } else if (token.getType().equals("Keyword") && token.getValue().equals("if")) {
+        // If it's an "if" statement, parse the conditional expression and the block
+        consume("Keyword", "if");
+        consume("Punctuation", "(");
+        parseExpression();
+        consume("Punctuation", ")"); // Ensure to consume the closing parenthesis after the conditional expression
+        parseBlock(); // Parse the main block
 
-    // Parse an expression
-    private void parseExpression() {
-        Token token = peek();
-        if (token.getType().equals("Identifier") && (position + 1 < tokens.size()) && tokens.get(position + 1).getValue().equals("(")) {
-            parseFunctionCall(token);
-        } else if (token.getType().equals("Constant")) {
-            consume("Constant", null);
-            System.out.println("Parsed constant expression with value " + token.getValue());
-        } else if (token.getType().equals("Identifier")) {
-            consume("Identifier", null);
-            System.out.println("Parsed identifier expression with value " + token.getValue());
-        } else if (token.getType().equals("Operator")) {
-            // Handle different operators
-            String operatorValue = token.getValue();
-            if (isBinaryOperator(operatorValue)) {
-                consume("Operator", operatorValue);
-            } else {
-                throw new ParseException("Unexpected unary operator: " + operatorValue);
-            }
-        } else {
-            throw new ParseException("Expected expression, but found token: " + token);
+        // Check for an optional "else" block
+        if (peek().getType().equals("Keyword") && peek().getValue().equals("else")) {
+            consume("Keyword", "else");
+            parseBlock(); // Parse the else block
         }
+    } else if (token.getType().equals("Keyword") && token.getValue().equals("return")) {
+        // If it's a "return" statement, parse the expression (if present)
+        consume("Keyword", "return");
+        if (!peek().getValue().equals(";")) {
+            parseExpression();
+        }
+        Token semicolon = consume("Punctuation", ";"); // Expect a semicolon after the return statement
+        System.out.println("Parsed return statement");
+    } else {
+        // If none of the above, it could be an assignment statement
+        parseAssignmentStatement();
     }
+}
+
+    
+
+   // Parse an expression
+   private void parseExpression() {
+    Token token = peek();
+    if (token.getType().equals("Constant")) {
+        consume("Constant", null);
+        System.out.println("Parsed constant expression with value " + token.getValue());
+    } else if (token.getType().equals("Identifier")) {
+        String varName = token.getValue();
+        if (!symbolTable.contains(varName)) {
+            throw new SemanticException("Variable '" + varName + "' not declared");
+        }
+        consume("Identifier", null);
+        System.out.println("Parsed identifier expression with value " + varName);
+    } else if (token.getType().equals("String")) {
+        consume("String", null);
+        System.out.println("Parsed string literal: " + token.getValue());
+    } else if (token.getType().equals("Operator") && token.getValue().equals("+")) {
+        consume("Operator", "+");
+        parseExpression();
+        parseExpression();
+        System.out.println("Parsed addition expression");
+    } else {
+        throw new SemanticException("Unsupported expression");
+    }
+}
+
 
     // Parse an assignment statement
     private void parseAssignmentStatement() {
@@ -133,6 +137,11 @@ public class Parser extends Analyzer {
     private void parseVariableDeclaration() {
         consume("Keyword", "int");
         Token identifier = consume("Identifier", null);
+
+        // Check for duplicate variable declaration
+        if (!symbolTable.add(identifier.getValue())) {
+            throw new SemanticException("Variable '" + identifier.getValue() + "' already declared");
+        }
 
         // Check for optional assignment
         if (peek().getValue().equals("=")) {
@@ -238,6 +247,12 @@ public class Parser extends Analyzer {
     // Check if we've reached the end of the token list
     private boolean isAtEnd() {
         return position >= tokens.size();
+    }
+
+    static class SemanticException extends RuntimeException {
+        public SemanticException(String message) {
+            super(message);
+        }
     }
 
     public static void main(String[] args) {

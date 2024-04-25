@@ -11,23 +11,24 @@ public class Analyzer {
     //regular expressions for each type of token.
 
     public static final String keywords = "\\b(if|else|int|double|float|struct|char|long|for|while|return|switch|case)\\b";
+    public static final String strings = "\"(?:[^\"\\\\]|\\\\.)*\"";
     public static final String identifiers = "[a-zA-Z_][a-zA-Z0-9_]*";
     public static final String operators = "\\+|-|\\*|/|%|=|==|!=|<|>|<=|>=|&&|\\|\\|";
     public static final String punctuation = "[{}()\\[\\],;.]";
-    public static final String constants = "\\b(\\d+\\.\\d+|\\d+\\.\\d*[eE][+-]?\\d+|\\d+[eE][+-]?\\d+|\\d+|'[^']*'|\"[^\"]*\")\\b";
+    public static final String constants = "\\b(\\d+\\.\\d+|\\d+\\.\\d*[eE][+-]?\\d+|\\d+[eE][+-]?\\d+|\\d+|\"[^\"]*\"|'[^']*')\\b";
     public static final String escapes = "\\\\.";
-    public static final String headers = "#include\\s+<[^>]+>";
+    public static final String headers = "#include\\s+<[^>]+>|#include\\s+\"[^\"]+\"";
     
     public static ArrayList<Token> Tokenizer(String input) {   
         //tokenList.clear(); // Clear the token list at the beginning
-        String combinedPattern = String.join("|", keywords, identifiers, operators, punctuation, constants, escapes, headers);
+        String combinedPattern = String.join("|", keywords, identifiers, operators, punctuation, constants, escapes, headers, strings);
     
         Pattern pattern = Pattern.compile(combinedPattern);
         Matcher matcher = pattern.matcher(input);
     
         while(matcher.find()) {   
             String tokenType = "";
-            String tokenValue = matcher.group();
+            String tokenValue = matcher.group().trim(); // Trim to remove leading/trailing whitespace
             if (tokenValue.matches(keywords)) {
                 tokenType = "Keyword";
             } else if (tokenValue.matches(identifiers)) {
@@ -42,6 +43,8 @@ public class Analyzer {
                 tokenType = "Escape Character";
             } else if (tokenValue.matches(headers)) {
                 tokenType = "Header";
+            } else if (tokenValue.matches(strings)) {
+                tokenType = "String";
             } else {
                 System.out.println("Invalid token type for: " + tokenValue);
             }
